@@ -1,0 +1,40 @@
+{% extends 'base.html' %}
+
+{% block content %}
+  <div class="container">
+    <div class="row">
+      <div class="col-md-4">
+        <h2>Chats</h2>
+        <ul class="list-group">
+          {% for chat in chats %}
+            <li class="list-group-item">
+              <a href="">{{ chat.title }}</a>
+            </li>
+          {% endfor %}
+        </ul>
+      </div>
+      <div class="col-md-8">
+        <h2>Messages</h2>
+        <div class="message-container">
+          <div class="message">
+            {% with default_message=last_messages|default:"{}" %}
+              {% if chat_id in default_message %}
+                <p>{{ default_message.0.content }}</p>
+                <p class="text-muted">Sent by {{ default_message.0.sender.username }} at {{ default_message.0.timestamp }}</p>
+              {% endif %}
+            {% endwith %}
+          </div>
+          <div class="message-form">
+            <form method="post" action="">
+              {% csrf_token %}
+              <div class="form-group">
+                <textarea class="form-control" name="content" rows="3" placeholder="Type your message..."></textarea>
+              </div>
+              <button type="submit" class="btn btn-primary">Send</button>
+            </form>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+{% endblock %}

@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mi Sitio Web</title>
+    <!-- Agrega aquí tus enlaces a hojas de estilo CSS y scripts JavaScript comunes -->
+</head>
+<body>
+    <header>
+        <!-- Aquí puedes colocar el encabezado común de tu sitio web, como el menú de navegación -->
+        <nav>
+            <ul>
+                <li><a href="/">Inicio</a></li>
+                <li><a href="/chats/">Chats</a></li>
+                <li><a href="{% url 'logout' %}">Cerrar sesión</a></li>
+                <!-- Otros elementos del menú -->
+            </ul>
+        </nav>
+    </header>
+
+    <main>
+        <!-- El contenido específico de cada página se insertará aquí mediante bloques -->
+        {% block content %}
+        {% endblock %}
+    </main>
+
+    <footer>
+        <!-- Aquí puedes colocar el pie de página común de tu sitio web -->
+    </footer>
+</body>
+</html>
