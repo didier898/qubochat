@@ -3,13 +3,16 @@ from django.contrib.auth.decorators import login_required
 from django.http import HttpResponse
 from django.shortcuts import render, redirect
 from .forms import SignUpForm, UserProfileForm
-from .models import Message, UserProfile
 from django.contrib import messages
 from django.db import IntegrityError
+from .models import Message, UserProfile
+from .models import Conversation
+ 
+
 
 def index(request):
     if request.user.is_authenticated:
-        return redirect('chats')
+        return redirect('edit_profile')
     if request.method == 'GET':
         return render(request, 'chat/index.html', {})
     if request.method == "POST":
@@ -22,31 +25,13 @@ def index(request):
             messages.error(request, 'Usuario o contraseña incorrectos')  # Mensaje de error
             return HttpResponse('{"error": "User does not exist"}')
 
-@login_required
-def chat_view(request):
-    if request.method == "GET":
-        return render(request, 'chat/chats.html', {'users': UserProfile.objects.exclude(username=request.user.username)})
-
-@login_required
-def message_view(request, sender, receiver):
-    if request.method == "GET":
-        sender_profile = UserProfile.objects.get(id=sender)
-        receiver_profile = UserProfile.objects.get(id=receiver)
-        messages = Message.objects.filter(sender_id=sender, receiver_id=receiver) | \
-                   Message.objects.filter(sender_id=receiver, receiver_id=sender)
-        
-        context = {
-            'users': {'sender': sender_profile, 'receiver': receiver_profile},
-            'messages': messages,
-        }
-
-        return render(request, "chat/messages.html", context)
 
 @login_required
 def profile_view(request):
     user_profile = request.user
     context = {
         'user_profile': user_profile,
+        'user_id': user_profile.id,  # Obtén el ID del usuario
     }
     return render(request, 'chat/profile.html', context)
 
@@ -60,6 +45,87 @@ def edit_profile(request):
     else:
         form = UserProfileForm(instance=request.user)
     return render(request, 'chat/editar_perfil.html', {'form': form})
+
+
+
+@login_required
+def enviar_mensaje(request):
+    if request.method == 'POST':
+        # Obtener el ID del receptor y el contenido del mensaje del formulario
+        receptor_id = request.POST.get('receptor_id')
+        mensaje = request.POST.get('mensaje')
+
+        try:
+            # Verificar si el usuario receptor existe
+            receptor = UserProfile.objects.get(pk=receptor_id)
+
+            # Verificar si ya existe una conversación entre el usuario actual y el receptor
+            conversacion, creada = Conversation.objects.get_or_create(
+                user1=request.user,
+                user2=receptor
+            )
+
+            # Crear el mensaje en la conversación
+            Message.objects.create(
+                sender=request.user,
+                receiver=receptor,
+                message=mensaje,
+                conversation=conversacion
+            )
+
+            messages.success(request, 'Mensaje enviado exitosamente.')
+            return redirect('chat')  # Redirige al usuario a la página de chat después de enviar el mensaje
+
+        except UserProfile.DoesNotExist:
+            messages.error(request, 'El usuario con el ID proporcionado no existe.')
+        except Exception as e:
+            messages.error(request, f'Hubo un error al enviar el mensaje: {str(e)}')
+
+    return render(request, 'chat/enviar_mensaje.html')
+
+
+@login_required
+def chat(request):
+    # Obtener todas las conversaciones del usuario actual
+    conversaciones = Conversation.objects.filter(user1=request.user) | Conversation.objects.filter(user2=request.user)
+
+    return render(request, 'chat/chat.html', {'conversaciones': conversaciones})
+
+
+
+@login_required
+def chat_conversacion(request, conversacion_id):
+    try:
+        conversacion = Conversation.objects.get(pk=conversacion_id)
+
+        # Verificar si el usuario actual es parte de la conversación
+        if request.user in (conversacion.user1, conversacion.user2):
+            mensajes = Message.objects.filter(conversation=conversacion)
+
+            if request.method == 'POST':
+                # Procesar el envío de un nuevo mensaje en la conversación
+                mensaje = request.POST.get('mensaje')
+                # Determinar quién es el receptor en función del usuario actual
+                receptor = conversacion.user1 if request.user == conversacion.user2 else conversacion.user2
+                Message.objects.create(
+                    sender=request.user,
+                    receiver=receptor,
+                    message=mensaje,
+                    conversation=conversacion
+                )
+
+            return render(request, 'chat/conversacion.html', {'conversacion': conversacion, 'mensajes': mensajes})
+
+        else:
+            # Manejar el caso en el que la conversación no pertenece al usuario
+            messages.error(request, 'No tienes acceso a esta conversación.')
+            return redirect('chat')
+
+    except Conversation.DoesNotExist:
+        # Manejar el caso en el que la conversación no existe
+        messages.error(request, 'La conversación no existe.')
+        return redirect('chat')
+
 
 def register_view(request):
     if request.method == 'POST':
@@ -103,3 +169,5 @@ def register_view(request):
     template = 'chat/register.html'
     context = {'form': form}
     return render(request, template, context)
+
+

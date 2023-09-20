@@ -9,11 +9,6 @@ class SignUpForm(UserCreationForm):
     pin = forms.CharField(max_length=10, widget=forms.TextInput(attrs={'class': 'form-control'}), required=False)
     profile_picture = forms.ImageField(widget=forms.FileInput(attrs={'class': 'form-control'}))
     
-    # Agregar la validación de unicidad para el campo 'username'
-    #username = forms.CharField(
-        #widget=forms.TextInput(attrs={'class': 'form-control'}),
-        #help_text="Este campo es requerido. 150 caracteres o menos. Letras, dígitos y @ /. / - / _ solamente.",
-    #)
 
     class Meta:
         model = get_user_model()  # Utiliza esta función para obtener el modelo de usuario actual
