@@ -17,16 +17,16 @@ def index(request):
         user = authenticate(username=username, password=password)
         if user is not None:
             login(request, user)
-            return redirect('index')
+            return redirect('index')  # Redirige al usuario a 'index' después de iniciar sesión
         else:
-            messages.error(request, 'Usuario o contraseña incorrectos')
+            messages.error(request, 'Usuario o contraseña incorrectos')  # Mensaje de error
             return HttpResponse('{"error": "User does not exist"}')
+
 
 @login_required
 def chat_view(request):
     if request.method == "GET":
-        return render(request, 'chat/chats.html',
-                      {'users': UserProfile.objects.exclude(username=request.user.username)})
+        return render(request, 'chat/chats.html', {'users': UserProfile.objects.exclude(username=request.user.username)})
 
 @login_required
 def message_view(request, sender, receiver):
@@ -43,15 +43,13 @@ def message_view(request, sender, receiver):
 
         return render(request, "chat/messages.html", context)
 
-
 @login_required
 def profile_view(request):
-    user_profile = request.user  # Accede al perfil del usuario directamente
+    user_profile = request.user
     context = {
         'user_profile': user_profile,
     }
     return render(request, 'chat/profile.html', context)
-
 
 @login_required
 def edit_profile(request):
@@ -74,26 +72,25 @@ def register_view(request):
             # Verificar que las contraseñas coincidan
             if password != form.cleaned_data['password2']:
                 messages.error(request, 'Las contraseñas no coinciden. Por favor, inténtalo de nuevo.')
-                return redirect('register')
+            else:
+                # Generar automáticamente un PIN único para el usuario
+                while True:
+                    pin = ''.join(random.choices('0123456789', k=10))
+                    if not UserProfile.objects.filter(pin=pin).exists():
+                        break
 
-            # Generar automáticamente un PIN único para el usuario
-            while True:
-                pin = ''.join(random.choices('0123456789', k=10))
-                if not UserProfile.objects.filter(pin=pin).exists():
-                    break
+                # Crear el usuario con el PIN generado
+                user = UserProfile.objects.create_user(username=username, password=password)
+                if user is not None:
+                    if user.is_active:
+                        login(request, user)
 
-            # Crear el usuario con el PIN generado
-            user = UserProfile.objects.create_user(username=username, password=password)
-            if user is not None:
-                if user.is_active:
-                    login(request, user)
+                        profile = UserProfile.objects.create(pin=pin, profile_picture=form.cleaned_data['profile_picture'])
 
-                    profile = UserProfile.objects.create(pin=pin, profile_picture=form.cleaned_data['profile_picture'])
-
-                    messages.success(request, 'Registro exitoso. ¡Bienvenido a QuboChat!')
-                    return redirect('index')
+                        messages.success(request, 'Registro exitoso. ¡Bienvenido a QuboChat!')
+                        return redirect('index')  # Redirigir al usuario a la página de inicio después de un registro exitoso
         else:
-            print(form.errors)
+            print(form.errors)  # Mensaje de depuración en caso de errores de formulario
             messages.error(request, 'Hubo un problema con el registro. Por favor, verifica tus datos.')
 
     else:
