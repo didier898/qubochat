@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container">
+    <h2>Editar tu perfil</h2>
+
+    {% if messages %}
+        <div class="alert alert-success">
+            <ul>
+                {% for message in messages %}
+                    <li>{{ message }}</li>
+                {% endfor %}
+            </ul>
+        </div>
+    {% endif %}
+
+    <form method="post" enctype="multipart/form-data">
+        {% csrf_token %}
+        {{ form.username.label_tag }}
+        {{ form.username }}
+        <br><br>
+        PIN: {{ user.userprofile.pin }}
+        <br><br>
+        {{ form.profile_picture.label_tag }}
+        <img src="{{ user.userprofile.profile_picture.url }}" alt="Imagen de perfil actual">
+        <br><br>
+        Cambiar foto de perfil: {{ form.profile_picture }}
+        <br><br>
+        <button type="submit">Guardar Cambios</button>
+    </form>
+</div>
+{% endblock %}

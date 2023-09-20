@@ -4,8 +4,10 @@ from . import views
 
 urlpatterns = [
     path('', views.index, name='index'),
-    path('chat/chats/', views.chat_view, name='chats'),
-    path('chat/chats/<int:sender>/<int:receiver>/', views.message_view, name='chats'),
-    path('logout/', LogoutView.as_view(next_page='index'), name='logout'),  # Utiliza LogoutView.as_view()
+    path('chats/', views.chat_view, name='chats'),  # Cambiado de 'chat/chats/' a 'chats/'
+    path('chats/<int:sender>/<int:receiver>/', views.message_view, name='message'),
+    path('logout/', LogoutView.as_view(next_page='index'), name='logout'),
     path('register/', views.register_view, name='register'),
+    path('profile/', views.profile_view, name='profile'),
+    path('profile/edit/', views.edit_profile, name='edit_profile'),
 ]

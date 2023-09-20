@@ -17,7 +17,7 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'widget_tweaks',
     'rest_framework',
-    'core'
+    'core',
 ]
 
 MIDDLEWARE = [
@@ -84,5 +84,15 @@ USE_L10N = True
 
 USE_TZ = True
 
+# Configuración para archivos estáticos (CSS, JavaScript, etc.)
 STATIC_URL = '/static/'
 STATICFILES_DIRS = [os.path.join(BASE_DIR, 'static')]
+
+# Configuración para archivos de medios (imágenes de perfil, etc.)
+MEDIA_URL = '/media/'
+MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
+
+# Agrega 'django.core.files.storage.FileSystemStorage' para el procesamiento de archivos de medios
+DEFAULT_FILE_STORAGE = 'django.core.files.storage.FileSystemStorage'
+
+AUTH_USER_MODEL = 'core.UserProfile'
