@@ -5,7 +5,7 @@ from django.shortcuts import render, redirect
 from .forms import SignUpForm, UserProfileForm
 from .models import Message, UserProfile
 from django.contrib import messages
-import random
+from django.db import IntegrityError
 
 def index(request):
     if request.user.is_authenticated:
@@ -21,7 +21,6 @@ def index(request):
         else:
             messages.error(request, 'Usuario o contraseña incorrectos')  # Mensaje de error
             return HttpResponse('{"error": "User does not exist"}')
-
 
 @login_required
 def chat_view(request):
@@ -72,25 +71,31 @@ def register_view(request):
             # Verificar que las contraseñas coincidan
             if password != form.cleaned_data['password2']:
                 messages.error(request, 'Las contraseñas no coinciden. Por favor, inténtalo de nuevo.')
-            else:
-                # Generar automáticamente un PIN único para el usuario
-                while True:
-                    pin = ''.join(random.choices('0123456789', k=10))
-                    if not UserProfile.objects.filter(pin=pin).exists():
-                        break
+                return redirect('register')
 
-                # Crear el usuario con el PIN generado
+            # Obtener el valor del PIN del formulario
+            pin = form.cleaned_data['pin']
+
+            try:
+                # Intentar crear el usuario
                 user = UserProfile.objects.create_user(username=username, password=password)
                 if user is not None:
                     if user.is_active:
                         login(request, user)
 
-                        profile = UserProfile.objects.create(pin=pin, profile_picture=form.cleaned_data['profile_picture'])
+                        # Crear el perfil con el PIN proporcionado
+                        profile = UserProfile.objects.create(
+                            pin=pin,
+                            profile_picture=form.cleaned_data['profile_picture']
+                        )
 
                         messages.success(request, 'Registro exitoso. ¡Bienvenido a QuboChat!')
-                        return redirect('index')  # Redirigir al usuario a la página de inicio después de un registro exitoso
+                        return redirect('index')
+            except IntegrityError:
+                return redirect('index')
+
         else:
-            print(form.errors)  # Mensaje de depuración en caso de errores de formulario
+            print(form.errors)
             messages.error(request, 'Hubo un problema con el registro. Por favor, verifica tus datos.')
 
     else:

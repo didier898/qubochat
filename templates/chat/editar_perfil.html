@@ -19,7 +19,8 @@
         {{ form.username.label_tag }}
         {{ form.username }}
         <br><br>
-        PIN: {{ user.userprofile.pin }}
+        PIN: {{ form.pin.label_tag }}
+        {{ form.pin }}
         <br><br>
         {{ form.profile_picture.label_tag }}
         <img src="{{ user.userprofile.profile_picture.url }}" alt="Imagen de perfil actual">

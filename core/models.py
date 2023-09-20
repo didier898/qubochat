@@ -2,7 +2,7 @@ from django.contrib.auth.models import AbstractUser
 from django.db import models
 
 class UserProfile(AbstractUser):
-    pin = models.CharField(max_length=10, unique=True)
+    pin = models.CharField(max_length=10, unique=True, null=True, blank=True)  # Permitir que el PIN sea opcional
     profile_picture = models.ImageField(upload_to='profile_pictures/', null=True, blank=True)
     groups = models.ManyToManyField(
         'auth.Group',
