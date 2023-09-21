@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-
+<!--{% load static %}-->
 {% block content %}
 <div class="container">
     <h2>Editar tu perfil</h2>
@@ -16,18 +16,24 @@
 
     <form method="post" enctype="multipart/form-data">
         {% csrf_token %}
-        {{ form.username.label_tag }}
-        {{ form.username }}
-        <br><br>
-        PIN: {{ form.pin.label_tag }}
-        {{ form.pin }}
-        <br><br>
-        {{ form.profile_picture.label_tag }}
-        <img src="{{ user.userprofile.profile_picture.url }}" alt="Imagen de perfil actual">
-        <br><br>
-        Cambiar foto de perfil: {{ form.profile_picture }}
-        <br><br>
-        <button type="submit">Guardar Cambios</button>
+        <div class="form-group">
+            <label for="{{ form.username.id_for_label }}">Nombre de usuario</label>
+            {{ form.username }}
+        </div>
+        <div class="form-group">
+            <label for="{{ form.pin.id_for_label }}">PIN</label>
+            {{ form.pin }}
+        </div>
+        <div class="form-group">
+            <label for="{{ form.profile_picture.id_for_label }}">Imagen de perfil actual</label>
+            <br>
+            <img src="{{ user.userprofile.profile_picture.url }}" alt="Imagen de perfil actual" class="img-thumbnail">
+        </div>
+        <div class="form-group">
+            <label for="{{ form.profile_picture.id_for_label }}">Cambiar foto de perfil</label>
+            {{ form.profile_picture }}
+        </div>
+        <button type="submit" class="btn btn-primary">Guardar Cambios</button>
     </form>
 </div>
 {% endblock %}

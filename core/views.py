@@ -7,6 +7,7 @@ from django.contrib import messages
 from django.db import IntegrityError
 from .models import Message, UserProfile
 from .models import Conversation
+from django.shortcuts import render, get_object_or_404
  
 
 
@@ -46,7 +47,18 @@ def edit_profile(request):
         form = UserProfileForm(instance=request.user)
     return render(request, 'chat/editar_perfil.html', {'form': form})
 
+def chat_conversacion(request, conversacion_id):
+    # Obtener la conversación específica o mostrar un error 404 si no existe
+    conversacion = get_object_or_404(Conversation, id=conversacion_id)
 
+    # Verificar si el usuario actual está autorizado para ver esta conversación
+    if request.user != conversacion.user1 and request.user != conversacion.user2:
+        return render(request, 'chat/error.html', {'error_message': 'No tienes permiso para ver esta conversación.'})
+
+    # Obtener todos los mensajes de la conversación
+    mensajes = Message.objects.filter(conversation=conversacion).order_by('fecha_envio')
+
+    return render(request, 'chat/conversacion.html', {'conversacion': conversacion, 'mensajes': mensajes})
 
 @login_required
 def enviar_mensaje(request):
@@ -83,48 +95,32 @@ def enviar_mensaje(request):
 
     return render(request, 'chat/enviar_mensaje.html')
 
-
 @login_required
 def chat(request):
     # Obtener todas las conversaciones del usuario actual
     conversaciones = Conversation.objects.filter(user1=request.user) | Conversation.objects.filter(user2=request.user)
+    
+    # Definir aquí la conversación seleccionada (por ejemplo, la primera conversación)
+    conversacion_seleccionada = None
+    
+    # Crear una lista para almacenar los mensajes de la conversación seleccionada
+    mensajes_de_conversacion = []
+    
+    for conversacion in conversaciones:
+        # Obtener los mensajes para esta conversación
+        mensajes = Message.objects.filter(conversation=conversacion)
+        
+        # Agregarlos a la lista de mensajes si es la conversación seleccionada
+        if conversacion == conversacion_seleccionada:
+            mensajes_de_conversacion.extend(mensajes)
 
-    return render(request, 'chat/chat.html', {'conversaciones': conversaciones})
+    return render(request, 'chat/chat.html', {
+        'conversaciones': conversaciones,
+        'mensajes_por_conversacion': mensajes_de_conversacion,  # Cambiar el nombre de la variable
+        'conversacion_seleccionada': conversacion_seleccionada,
+    })
 
 
-
-@login_required
-def chat_conversacion(request, conversacion_id):
-    try:
-        conversacion = Conversation.objects.get(pk=conversacion_id)
-
-        # Verificar si el usuario actual es parte de la conversación
-        if request.user in (conversacion.user1, conversacion.user2):
-            mensajes = Message.objects.filter(conversation=conversacion)
-
-            if request.method == 'POST':
-                # Procesar el envío de un nuevo mensaje en la conversación
-                mensaje = request.POST.get('mensaje')
-                # Determinar quién es el receptor en función del usuario actual
-                receptor = conversacion.user1 if request.user == conversacion.user2 else conversacion.user2
-                Message.objects.create(
-                    sender=request.user,
-                    receiver=receptor,
-                    message=mensaje,
-                    conversation=conversacion
-                )
-
-            return render(request, 'chat/conversacion.html', {'conversacion': conversacion, 'mensajes': mensajes})
-
-        else:
-            # Manejar el caso en el que la conversación no pertenece al usuario
-            messages.error(request, 'No tienes acceso a esta conversación.')
-            return redirect('chat')
-
-    except Conversation.DoesNotExist:
-        # Manejar el caso en el que la conversación no existe
-        messages.error(request, 'La conversación no existe.')
-        return redirect('chat')
 
 
 def register_view(request):
