@@ -8,8 +8,7 @@ const InterfazBase = ({ children }) => {
         <meta charset="UTF-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
         <title>Título de tu página</title>
-        {/* Agrega el enlace a tu archivo de estilos CSS aquí */}
-        <link rel="stylesheet" type="text/css" href="/ruta/a/tu/styles.css" />
+        
       </head>
       <body>
         <header>

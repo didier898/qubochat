@@ -11,8 +11,16 @@ from rest_framework import status
 from .forms import SignUpForm, UserProfileForm
 from .models import Message, UserProfile, Conversation
 from .serializers import MessageSerializer
+from rest_framework.decorators import api_view, permission_classes
+from rest_framework.permissions import AllowAny
 import json
+from rest_framework_simplejwt.views import TokenObtainPairView
+from rest_framework.permissions import IsAuthenticated
+from rest_framework_simplejwt.tokens import RefreshToken
+from rest_framework.decorators import api_view, permission_classes
+from rest_framework.permissions import IsAuthenticated
 
+@csrf_exempt
 def index(request):
     if request.user.is_authenticated:
         return redirect('edit_profile')
@@ -20,10 +28,12 @@ def index(request):
         return render(request, 'chat/index.html', {})
     if request.method == "POST":
         username, password = request.POST['username'], request.POST['password']
+        print(username)
+        print(password)
         user = authenticate(username=username, password=password)
         if user is not None:
             login(request, user)
-            return redirect('index')  
+            return redirect('profile/edit/')  
         else:
             messages.error(request, 'Usuario o contraseña incorrectos')  
             return HttpResponse('{"error": "User does not exist"}')
@@ -48,6 +58,7 @@ def edit_profile(request):
         form = UserProfileForm(instance=request.user)
     return render(request, 'chat/editar_perfil.html', {'form': form})
 
+@login_required
 def chat_conversacion(request, conversacion_id):
     
     conversacion = get_object_or_404(Conversation, id=conversacion_id)
@@ -64,21 +75,21 @@ def chat_conversacion(request, conversacion_id):
 @login_required
 def enviar_mensaje(request):
     if request.method == 'POST':
-        # Obtener el ID del receptor y el contenido del mensaje del formulario
+        
         receptor_id = request.POST.get('receptor_id')
         mensaje = request.POST.get('mensaje')
 
         try:
-            # Verificar si el usuario receptor existe
+            
             receptor = UserProfile.objects.get(pk=receptor_id)
 
-            # Verificar si ya existe una conversación entre el usuario actual y el receptor
+            
             conversacion, creada = Conversation.objects.get_or_create(
                 user1=request.user,
                 user2=receptor
             )
 
-            # Crear el mensaje en la conversación
+           
             Message.objects.create(
                 sender=request.user,
                 receiver=receptor,
@@ -87,7 +98,7 @@ def enviar_mensaje(request):
             )
 
             messages.success(request, 'Mensaje enviado exitosamente.')
-            return redirect('chat')  # Redirige al usuario a la página de chat después de enviar el mensaje
+            return redirect('chat')  
 
         except UserProfile.DoesNotExist:
             messages.error(request, 'El usuario con el ID proporcionado no existe.')
@@ -100,28 +111,31 @@ def enviar_mensaje(request):
 def chat(request):
     # Obtener todas las conversaciones del usuario actual
     conversaciones = Conversation.objects.filter(user1=request.user) | Conversation.objects.filter(user2=request.user)
+
+    # Obtener el ID de la conversación seleccionada de la URL
+    conversacion_id = request.GET.get('conversacion_id')
     
-    # Definir aquí la conversación seleccionada (por ejemplo, la primera conversación)
+    # Definir aquí la conversación seleccionada
     conversacion_seleccionada = None
-    
-    # Crear una lista para almacenar los mensajes de la conversación seleccionada
+
+    # Lista para almacenar los mensajes de la conversación seleccionada
     mensajes_de_conversacion = []
-    
-    for conversacion in conversaciones:
-        # Obtener los mensajes para esta conversación
-        mensajes = Message.objects.filter(conversation=conversacion)
-        
-        # Agregarlos a la lista de mensajes si es la conversación seleccionada
-        if conversacion == conversacion_seleccionada:
-            mensajes_de_conversacion.extend(mensajes)
+
+    if conversacion_id:
+        # Obtener la conversación seleccionada por ID
+        conversacion_seleccionada = get_object_or_404(Conversation, id=conversacion_id)
+
+        # Obtener todos los mensajes de la conversación seleccionada
+        mensajes_de_conversacion = Message.objects.filter(conversation=conversacion_seleccionada)
 
     return render(request, 'chat/chat.html', {
         'conversaciones': conversaciones,
-        'mensajes_por_conversacion': mensajes_de_conversacion,  
+        'mensajes_por_conversacion': mensajes_de_conversacion,
         'conversacion_seleccionada': conversacion_seleccionada,
     })
-
-@login_required
+    
+@csrf_exempt
+@api_view(['GET', 'POST'])
 def chat_api(request):
     # Obtener todas las conversaciones del usuario actual
     conversaciones = Conversation.objects.filter(user1=request.user) | Conversation.objects.filter(user2=request.user)
@@ -148,7 +162,7 @@ def chat_api(request):
             'id': conversacion.id,
             'otro_usuario_id': conversacion.get_other_user(request.user).id,
             'ultimo_mensaje_enviado_por': username_del_enviador,
-            # Agrega otros campos relevantes aquí
+            
         }
         
         # Agregarlos a la lista de datos si es la conversación seleccionada
@@ -163,6 +177,7 @@ def chat_api(request):
 
     return JsonResponse(data)
 
+@csrf_exempt
 def register_view(request):
     if request.method == 'POST':
         form = SignUpForm(request.POST, request.FILES)
@@ -207,10 +222,13 @@ def register_view(request):
     return render(request, template, context)
 
 @csrf_exempt
+@api_view(['GET', 'POST'])
 def register_api(request):
     if request.method == 'POST':
         data = json.loads(request.body.decode('utf-8'))
         form = SignUpForm(data)
+        print(data)
+        print(form)
 
         if form.is_valid():
             username = form.cleaned_data['username']
@@ -225,7 +243,7 @@ def register_api(request):
             pin = form.cleaned_data['pin']
 
             try:
-                # Intentar crear el usuario
+                
                 user = UserProfile.objects.create_user(username=username, password=password)
                 if user is not None:
                     if user.is_active:
@@ -247,43 +265,48 @@ def register_api(request):
         else:
             # Impresión de depuración para ver los errores de validación específicos del formulario
             print("Formulario no válido")
-            print(form.errors)  # Esto mostrará los errores de validación en la consola
+            print(form.errors)  
 
     else:
         response_data = {'error': 'Método no permitido'}
         return JsonResponse(response_data, status=405)
-
+    
+@csrf_exempt
+@permission_classes([IsAuthenticated])
+@api_view(['GET', 'POST'])
 def profilee_view(request):
     if request.user.is_authenticated:
-        user_profile = request.user  # Accede al perfil del usuario directamente
+        user_profile = request.user.userprofile  
         profile_data = {
-            'username': user_profile.username,
+            'user_id': user_profile.user.id,
             'pin': user_profile.pin,
-            'user_id': user_profile.id,
-            'profile_picture_url': user_profile.profile_picture.url,
-            # Agrega cualquier otro dato del perfil que desees enviar a React
+            'profile_picture_url': user_profile.profile_picture.url,  
         }
-        return JsonResponse(profile_data)
+        print(profile_data)
+        return Response(profile_data)
     else:
-        return JsonResponse({'error': 'Usuario no autenticado'}, status=401)
+        return Response({'error': 'Usuario no autenticado'}, status=401)
+
 
 @csrf_exempt
+@api_view(['GET', 'POST'])
+@permission_classes([IsAuthenticated])  
 def edit_profilee(request):
     if request.method == 'POST':
         try:
-            # Obtener los datos JSON del cuerpo de la solicitud
-            data = json.loads(request.body.decode('utf-8-sig'))  # Cambio en la decodificación
+            
+            data = json.loads(request.body.decode('utf-8-sig'))  
 
-            # Obtener el usuario actual
+            
             user = request.user
 
-            # Actualizar los campos del perfil según los datos recibidos en JSON
+            
             if 'username' in data:
                 user.username = data['username']
             if 'pin' in data:
                 user.userprofile.pin = data['pin']
 
-            # Guardar los cambios en el usuario y en el perfil
+            
             user.save()
             user.userprofile.save()
 
@@ -294,10 +317,7 @@ def edit_profilee(request):
             return JsonResponse({'error': str(e)}, status=400)
     else:
         return JsonResponse({'error': 'Método no permitido'}, status=405)
-    
-    
-    
-    
+
 @api_view(['GET', 'POST'])
 def lista_mensajes(request):
     if request.method == 'GET':
@@ -333,21 +353,39 @@ def detalle_mensaje(request, mensaje_id):
     elif request.method == 'DELETE':
         mensaje.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
-
+    
 @csrf_exempt
-def login_view(request):
+@api_view(['GET', 'POST'])    
+def login_and_return_json(request):
     if request.method == "POST":
         try:
             data = json.loads(request.body.decode('utf-8-sig'))
             username = data.get("username")
             password = data.get("password")
             user = authenticate(username=username, password=password)
-            if user is not None:
-                if user.is_active:
-                    login(request, user)
-                    return redirect('edit_profile')  # Redirige al perfil del usuario después del inicio de sesión exitoso
-                else:
-                    return JsonResponse({"error": "Usuario inactivo"}, status=400)
+
+            if user is not None and user.is_active:
+                login(request, user)
+
+                
+                refresh = RefreshToken.for_user(user)
+                access_token = str(refresh.access_token)
+
+                
+                print(f"Token JWT generado para el usuario {user.username}:")
+                print(f"  User ID: {user.id}")
+                print(f"  Username: {user.username}")
+                print(f"  Access Token: {access_token}")
+
+                
+                response_data = {
+                    "success": True,
+                    "message": "Inicio de sesión exitoso",
+                    "user_id": user.id,
+                    "username": user.username,
+                    "access_token": access_token,  
+                }
+                return JsonResponse(response_data)
             else:
                 return JsonResponse({"error": "Credenciales incorrectas"}, status=400)
         except json.JSONDecodeError as e:
@@ -356,35 +394,37 @@ def login_view(request):
             return JsonResponse({"error": str(e)}, status=400)
     else:
         return JsonResponse({"error": "Método no permitido"}, status=405)
-        
+ 
+      
 def usuario_autenticado(request):
     if request.user.is_authenticated:
-        print("El usuario está autenticado")  # Mensaje de depuración
+        
         return JsonResponse({"usuario_autenticado": True})
     else:
-        print("El usuario no está autenticado")  # Mensaje de depuración
+        
         return JsonResponse({"usuario_autenticado": False})
     
-    
+@api_view(['GET', 'POST'])
+@permission_classes([IsAuthenticated])
 def apichat_conversacion(request, conversacion_id):
-    # Obtener la conversación o devolver un error 404 si no existe
+    
     conversacion = get_object_or_404(Conversation, id=conversacion_id)
 
-    # Verificar si el usuario tiene permisos para ver la conversación
+    
     if request.user != conversacion.user1 and request.user != conversacion.user2:
         return JsonResponse({'error': 'No tienes permiso para ver esta conversación.'}, status=403)
 
-    # Obtener los mensajes de la conversación ordenados por fecha
+    
     mensajes = Message.objects.filter(conversation=conversacion).order_by('fecha_envio')
 
-    # Crear una lista de mensajes en formato JSON
+    
     mensajes_json = [{'sender': mensaje.sender.username, 'message': mensaje.message} for mensaje in mensajes]
 
-    # Crear un diccionario con los datos que deseas enviar a React
+    
     data = {
         'conversacion_id': conversacion.id,
         'mensajes': mensajes_json,
     }
 
-    # Enviar los datos en formato JSON como respuesta
+    
     return JsonResponse(data)

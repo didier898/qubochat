@@ -1,4 +1,6 @@
 import os
+# Importa la configuración de JWT
+from datetime import timedelta
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
@@ -17,10 +19,33 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'widget_tweaks',
     'rest_framework',
+    'drf_yasg',
+    'rest_framework_simplejwt',
     'corsheaders',
     'core',
   
 ]
+
+# Configuración de JWT
+REST_FRAMEWORK = {
+    'DEFAULT_AUTHENTICATION_CLASSES': (
+        'rest_framework_simplejwt.authentication.JWTAuthentication',
+    ),
+}
+
+SIMPLE_JWT = {
+    'ACCESS_TOKEN_LIFETIME': timedelta(minutes=8000),  # Tiempo de vida del token de acceso
+    'SLIDING_TOKEN_REFRESH_LIFETIME': timedelta(days=50),  # Tiempo de vida del token de actualización
+    'SLIDING_TOKEN_LIFETIME': timedelta(days=7),  # Tiempo de vida del token de actualización
+    'SLIDING_TOKEN_REFRESH_LIFETIME_GRACE_PERIOD': timedelta(days=2),  # Período de gracia para la actualización del token
+    'SLIDING_TOKEN_REFRESH_EACH_TIME': True,  # Actualizar el token en cada solicitud
+    'ROTATE_REFRESH_TOKENS': False,  # Rotar tokens de actualización
+    'ALGORITHM': 'HS256',  # Algoritmo de firma del token
+    'SIGNING_KEY': SECRET_KEY,  # Clave secreta para firmar el token
+    'VERIFYING_KEY': None,  # Clave de verificación (dejar en None para usar SIGNING_KEY)
+    'AUTH_HEADER_TYPES': ('Bearer',),  # Tipos de encabezado de autenticación
+    'AUTH_TOKEN_CLASSES': ('rest_framework_simplejwt.tokens.AccessToken',),  # Clases de token de autenticación
+}
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',

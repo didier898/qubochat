@@ -1,23 +1,21 @@
 {% extends "base.html" %}
-<!--{% load static %}-->
 {% block content %}
 <div class="container">
     <h2>Chats</h2>
     <ul>
         {% for conversacion in conversaciones %}
             <li>
-                <a href="{% url 'chat_conversacion' conversacion.id %}">{{ conversacion.get_other_user.username }}</a>
-
+                <a href="?conversacion_id={{ conversacion.id }}">{{ conversacion.get_other_user.username }}</a>
             </li>
         {% endfor %}
     </ul>
-    
+
     <div id="chat-box">
         {% if conversacion_seleccionada %}
             <h3>Chat con {{ conversacion_seleccionada.get_other_user.username }}</h3>
             <ul>
                 {% for mensaje in mensajes_por_conversacion %}
-                   <li>{{ mensaje.sender }}: {{ mensaje.message }}</li>
+                    <li>{{ mensaje.sender }}: {{ mensaje.message }}</li>
                 {% endfor %}
             </ul>
         {% else %}

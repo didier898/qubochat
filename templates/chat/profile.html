@@ -1,5 +1,6 @@
 {% extends "base.html" %}
-<!--{% load static %}-->
+{% load static %}
+
 {% block content %}
 <div class="container">
     <h2>Perfil de Usuario</h2>
@@ -15,10 +16,20 @@
         </div>
         <div class="col-md-4">
             <h4>Imagen de Perfil</h4>
-            <img src="{{ user_profile.profile_picture.url }}" alt="Imagen de perfil">
+            <div class="profile-picture-container">
+                <img src="{{ user_profile.profile_picture.url }}" alt="Imagen de perfil" class="profile-picture">
+            </div>
         </div>
     </div>
     
     <a href="{% url 'edit_profile' %}" class="btn btn-primary">Editar Perfil</a>
 </div>
+<style>
+/* Establece un tamaño máximo para la imagen */
+.profile-picture {
+    max-width: 20%; /* La imagen no será más ancha que su contenedor */
+    height: auto; /* Mantiene la proporción de la imagen */
+}
+
+</style>
 {% endblock %}

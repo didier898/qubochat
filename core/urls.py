@@ -5,6 +5,7 @@ from django.contrib import admin
 from django.urls import include
 from django.conf import settings
 from django.conf.urls.static import static
+from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 
 urlpatterns = [
     path('', views.index, name='index'),
@@ -22,9 +23,11 @@ urlpatterns = [
     path('api/editar_perfilee/', views.edit_profilee, name='editar_perfil'),
     path('api/mensajes/', views.lista_mensajes, name='lista_mensajes'),
     path('api/mensajes/<int:mensaje_id>/', views.detalle_mensaje, name='detalle_mensaje'),
-    path('login/', views.login_view, name='login_view'),
+    path('api/login/', views.login_and_return_json, name='login_and_return_json'),
     path('api/usuario_autenticado/', views.usuario_autenticado, name='usuario_autenticado'),
     path('api/chat_conversacion/', views.apichat_conversacion, name='apichat_conversacion'),
+    path('api/token/', TokenObtainPairView.as_view(), name='token_obtain_pair'),
+    path('api/token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
 ]
 
 if settings.DEBUG:

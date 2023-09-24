@@ -1,8 +1,10 @@
 import React, { useEffect, useState } from 'react';
+import {  useNavigate } from 'react-router-dom'; // Importa Link y useNavigate desde react-router-dom
 import InterfazBase from './InterfazBase'; // Importa tu componente base
 
 function ProfileComponent() {
   const [userData, setUserData] = useState(null);
+  const navigate = useNavigate(); // Obtiene la función navigate
 
   // Realiza una solicitud al backend para obtener los datos del perfil del usuario
   useEffect(() => {
@@ -29,7 +31,6 @@ function ProfileComponent() {
           <div className="col-md-4">
             <h4>Información del Perfil</h4>
             <ul>
-              <li>Nombre de usuario: {userData.username}</li>
               <li>PIN: {userData.pin}</li>
               <li>ID de Usuario: {userData.user_id}</li>
             </ul>
@@ -39,7 +40,8 @@ function ProfileComponent() {
             <img src={userData.profile_picture_url} alt="Imagen de perfil" />
           </div>
         </div>
-        <a href="/edit_profile" className="btn btn-primary">Editar Perfil</a>
+        {/* Utiliza navigate para redirigir a la página de edición de perfil */}
+        <button onClick={() => navigate('/profile/edit')} className="btn btn-primary">Editar Perfil</button>
       </div>
     </InterfazBase>
   );

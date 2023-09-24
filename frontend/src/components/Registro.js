@@ -28,18 +28,18 @@ function Register() {
     e.preventDefault();
 
     try {
-      const response = await axios.post('http://127.0.0.1:8000/register/', formData);
+      const response = await axios.post('http://127.0.0.1:8000/api/registro/', formData);
 
       if (response.status === 400 && response.data.error.includes('UNIQUE constraint failed: core_userprofile.username')) {
         setMessage('El usuario ya existe. Por favor, inicia sesión en lugar de registrarte.');
         setTimeout(() => {
-          navigate('/inicio-sesion'); // Redirecciona a la página de inicio de sesión
+          navigate('/'); // Redirecciona a la página de inicio de sesión
         }, 2000);
       } else if (response.data.message) {
         setMessage(response.data.message);
         setSuccessMessage('Registro exitoso. ¡Bienvenido a QuboChat!');
         setTimeout(() => {
-          navigate('/');
+          navigate('/profile/edit');
         }, 2000);
       } else {
         setMessage(response.data.error);
@@ -122,9 +122,7 @@ function Register() {
                     onChange={handleChange}
                   />
                 </div>
-                <div className="file-path-wrapper">
-                  <input className="file-path validate" type="text" />
-                </div>
+                
               </div>
             </div>
             <div className="row">

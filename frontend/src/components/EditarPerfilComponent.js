@@ -46,7 +46,7 @@ class EditarPerfilComponent extends Component {
     formData.append('profile_picture', this.state.profilePicture);
 
     // Realizar una solicitud POST para actualizar el perfil
-    axios.post('http://127.0.0.1:8000/profile/edit/', formData, {
+    axios.post('http://127.0.0.1:8000/api/editar_perfilee/', formData, {
       headers: {
         'Content-Type': 'multipart/form-data', // Necesario para enviar archivos
       },
